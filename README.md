@@ -2,8 +2,6 @@
 
 A modern, fast, and privacy-focused web application for analyzing WhatsApp chat exports. Built completely from the ground up using **Next.js**, **React**, and **Tailwind CSS** to replace previous flutter/python implementations.
 
-![WhatsApp Analyzer Preview](public/preview.png) *(Note: this is a placeholder if you wish to add a screenshot)*
-
 ## Features
 
 - **100% Private (Local Processing):** Your chats never leave your device. The entire `_chat.txt` file is parsed and analyzed locally in your browser.
