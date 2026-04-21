@@ -92,8 +92,13 @@ export default function Home() {
     const targetPage = Math.floor(index / PAGE_SIZE) + 1;
     setCurrentPage(targetPage);
     setTimeout(() => {
-      listRef.current?.scrollTo({ top: 0, behavior: "smooth" });
-    }, 50);
+      const msgEl = document.getElementById(`msg-${index}`);
+      if (msgEl) {
+        msgEl.scrollIntoView({ behavior: "smooth", block: "center" });
+      } else {
+        listRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    }, 100);
   };
 
   const formatTime24h = (date: Date | null, originalStr: string) => {
@@ -171,6 +176,7 @@ export default function Home() {
                         if (idx !== -1) {
                           setStartIndex(idx);
                           if (endIndex !== null && idx > endIndex) setEndIndex(messages.length - 1);
+                          jumpToMessageIndex(idx);
                         }
                       }}
                       className="w-full bg-slate-100 border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm"
@@ -196,6 +202,7 @@ export default function Home() {
                         if (idx !== -1) {
                           setEndIndex(idx);
                           if (startIndex !== null && idx < startIndex) setStartIndex(0);
+                          jumpToMessageIndex(idx);
                         }
                       }}
                       className="w-full bg-slate-100 border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm"
@@ -232,7 +239,7 @@ export default function Home() {
                   {paginatedMessages.map((msg, i) => {
                     const actualIndex = (currentPage - 1) * PAGE_SIZE + i;
                     return (
-                    <div key={actualIndex} className={`p-3 rounded-lg shadow-sm border group transition-colors ${getMessageColorClass(actualIndex)}`}>
+                    <div id={`msg-${actualIndex}`} key={actualIndex} className={`p-3 rounded-lg shadow-sm border group transition-colors ${getMessageColorClass(actualIndex)}`}>
                       <div className="flex justify-between items-start text-xs mb-1">
                         <div className="flex flex-col">
                            <span className={`font-semibold ${getMessageColorClass(actualIndex).includes('bg-white') ? 'text-slate-600' : 'text-blue-800'}`}>{msg.sender}</span>
