@@ -4,6 +4,80 @@ import { useState, useMemo, useRef } from "react";
 import { ChatMessage, parseChat } from "@/utils/parseChat";
 
 const PAGE_SIZE = 100;
+const DAYS = ["S", "M", "T", "W", "T", "F", "S"];
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+function getDaysInMonth(year: number, month: number) {
+  return new Date(year, month + 1, 0).getDate();
+}
+
+function getFirstDayOfMonth(year: number, month: number) {
+  return new Date(year, month, 1).getDay();
+}
+
+type ScrollColumnProps = {
+  values: number[];
+  selected: number;
+  onSelect: (value: number) => void;
+  format2?: boolean;
+};
+
+function ScrollColumn({ values, selected, onSelect, format2 = false }: ScrollColumnProps) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        width: 48,
+        overflowY: "auto",
+        maxHeight: 260,
+        scrollbarWidth: "none",
+      }}
+    >
+      {values.map((v) => {
+        const label = format2 ? String(v).padStart(2, "0") : String(v);
+        const isSelected = v === selected;
+        return (
+          <div
+            key={v}
+            onClick={() => onSelect(v)}
+            style={{
+              width: 40,
+              height: 36,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: 6,
+              cursor: "pointer",
+              fontWeight: isSelected ? 700 : 400,
+              fontSize: 15,
+              color: isSelected ? "#fff" : "#333",
+              background: isSelected ? "#1DAA61" : "transparent",
+              transition: "background 0.15s",
+              userSelect: "none",
+            }}
+          >
+            {label}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function Home() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -13,9 +87,30 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadTime, setLoadTime] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [searchDateTime, setSearchDateTime] = useState("");
+  const [openPicker, setOpenPicker] = useState(false);
+  const [viewYear, setViewYear] = useState(() => new Date().getFullYear());
+  const [viewMonth, setViewMonth] = useState(() => new Date().getMonth());
+  const [selectedDate, setSelectedDate] = useState(() => new Date().getDate());
+  const [selectedMonth, setSelectedMonth] = useState(() => new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
+  const [hour, setHour] = useState(() => new Date().getHours());
+  const [minute, setMinute] = useState(() => new Date().getMinutes());
+  const [second, setSecond] = useState(() => new Date().getSeconds());
   
   const listRef = useRef<HTMLDivElement>(null);
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+
+  const applyDateToPicker = (date: Date) => {
+    setViewYear(date.getFullYear());
+    setViewMonth(date.getMonth());
+    setSelectedDate(date.getDate());
+    setSelectedMonth(date.getMonth());
+    setSelectedYear(date.getFullYear());
+    setHour(date.getHours());
+    setMinute(date.getMinutes());
+    setSecond(date.getSeconds());
+  };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -25,7 +120,7 @@ export default function Home() {
     setLoadTime(null);
     setMessages([]);
     setCurrentPage(1);
-    setSearchDateTime("");
+    setOpenPicker(false);
 
     setTimeout(() => {
       const startTime = performance.now();
@@ -40,7 +135,9 @@ export default function Home() {
         if (parsed.length > 0) {
           setStartIndex(0);
           setEndIndex(parsed.length - 1);
-          setSearchDateTime(toDatetimeLocal(parsed[0].parsedDate));
+          if (parsed[0].parsedDate) {
+            applyDateToPicker(parsed[0].parsedDate);
+          }
         }
         
         const endTime = performance.now();
@@ -123,7 +220,7 @@ export default function Home() {
   };
 
   const handleSearchByDateTime = () => {
-    const ts = new Date(searchDateTime).getTime();
+    const ts = new Date(selectedYear, selectedMonth, selectedDate, hour, minute, second).getTime();
     if (isNaN(ts) || messages.length === 0) return;
 
     const idx = findClosestMessageIndex(ts);
@@ -131,6 +228,51 @@ export default function Home() {
 
     jumpToMessageIndex(idx);
   };
+
+  const daysInMonth = getDaysInMonth(viewYear, viewMonth);
+  const firstDay = getFirstDayOfMonth(viewYear, viewMonth);
+
+  const displayValue = `${pad(selectedDate)}/${pad(selectedMonth + 1)}/${selectedYear}, ${pad(hour)}:${pad(minute)}:${pad(second)}`;
+
+  const handleDayClick = (day: number) => {
+    setSelectedDate(day);
+    setSelectedMonth(viewMonth);
+    setSelectedYear(viewYear);
+  };
+
+  const prevMonth = () => {
+    if (viewMonth === 0) {
+      setViewMonth(11);
+      setViewYear((y) => y - 1);
+      return;
+    }
+    setViewMonth((m) => m - 1);
+  };
+
+  const nextMonth = () => {
+    if (viewMonth === 11) {
+      setViewMonth(0);
+      setViewYear((y) => y + 1);
+      return;
+    }
+    setViewMonth((m) => m + 1);
+  };
+
+  const isSelectedDay = (day: number) => {
+    return day === selectedDate && viewMonth === selectedMonth && viewYear === selectedYear;
+  };
+
+  const isToday = (day: number) => {
+    const t = new Date();
+    return day === t.getDate() && viewMonth === t.getMonth() && viewYear === t.getFullYear();
+  };
+
+  const prevDays = getDaysInMonth(viewYear, viewMonth === 0 ? 11 : viewMonth - 1);
+  const grid: Array<{ day: number; other: boolean }> = [];
+  for (let i = 0; i < firstDay; i += 1) grid.push({ day: prevDays - firstDay + 1 + i, other: true });
+  for (let d = 1; d <= daysInMonth; d += 1) grid.push({ day: d, other: false });
+  const remaining = 42 - grid.length;
+  for (let i = 1; i <= remaining; i += 1) grid.push({ day: i, other: true });
 
   const formatTime24h = (date: Date | null, originalStr: string) => {
     if (!date) return originalStr.replace(/am|pm/i, '').trim();
@@ -146,10 +288,8 @@ export default function Home() {
     return "bg-white border-slate-100 opacity-60"; // out of selected range
   };
 
-  const getBubbleLayout = (actualIndex: number) => {
-    if (startIndex !== null && actualIndex === startIndex) return "ml-0 mr-auto";
-    if (endIndex !== null && actualIndex === endIndex) return "ml-auto mr-0";
-    return actualIndex % 2 === 0 ? "ml-auto mr-0" : "ml-0 mr-auto";
+  const getBubbleLayout = () => {
+    return "ml-0 mr-auto";
   };
 
   return (
@@ -159,7 +299,7 @@ export default function Home() {
           <aside className="w-full max-w-[370px] border-r border-[#d8dde1] bg-[#f0f2f5] flex flex-col">
             <div className="bg-[#f0f2f5] px-4 py-3 border-b border-[#d8dde1]">
               <div className="flex items-center justify-between">
-                <h1 className="text-[22px] font-semibold text-[#00a884]">WhatsApp Analyzer</h1>
+                <h1 className="text-[22px] font-semibold text-[#1DAA61]">WhatsApp Analyzer</h1>
                 {loadTime !== null && messages.length > 0 && (
                   <span className="rounded-full bg-[#d9fdd3] px-3 py-1 text-xs font-medium text-[#087f5b]">
                     {(loadTime / 1000).toFixed(2)}s
@@ -175,7 +315,7 @@ export default function Home() {
                   <input type="file" accept=".txt" onChange={handleFileUpload} className="hidden" id="file-upload" />
                   <label
                     htmlFor="file-upload"
-                    className="inline-flex cursor-pointer items-center rounded-full bg-[#00a884] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[#019272]"
+                    className="inline-flex cursor-pointer items-center rounded-full bg-[#1DAA61] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[#189754]"
                   >
                     Choose .txt file
                   </label>
@@ -187,25 +327,120 @@ export default function Home() {
                 <div className="px-4 py-3 space-y-3 border-b border-[#d8dde1]">
                   <label className="text-xs font-medium tracking-wide text-[#667781]">Find by date and time</label>
                   <div className="flex gap-2">
-                    <input
-                      type="datetime-local"
-                      lang="en-GB"
-                      step="1"
-                      value={searchDateTime}
-                      onChange={(e) => setSearchDateTime(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") handleSearchByDateTime();
-                      }}
-                      className="dt-24h flex-1 rounded-lg border border-[#d8dde1] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#25d366]"
-                    />
+                    <div
+                      onClick={() => setOpenPicker((o) => !o)}
+                      className="flex-1 rounded-lg border border-[#d8dde1] bg-white px-3 py-2 text-sm cursor-pointer flex items-center justify-between"
+                    >
+                      <span>{displayValue}</span>
+                      <span className="text-[#8696a0]">Calendar</span>
+                    </div>
                     <button
                       onClick={handleSearchByDateTime}
-                      className="rounded-lg bg-[#00a884] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#019272] disabled:cursor-not-allowed disabled:opacity-60"
-                      disabled={!searchDateTime}
+                      className="rounded-lg bg-[#1DAA61] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#189754] disabled:cursor-not-allowed disabled:opacity-60"
+                      disabled={messages.length === 0}
                     >
                       Search
                     </button>
                   </div>
+                  {openPicker && (
+                    <div
+                      style={{
+                        display: "inline-flex",
+                        background: "#fff",
+                        borderRadius: 12,
+                        boxShadow: "0 4px 24px rgba(0,0,0,0.13)",
+                        overflow: "hidden",
+                        border: "1px solid #e5e7eb",
+                      }}
+                    >
+                      <div style={{ padding: "16px 12px", minWidth: 230 }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                          <span style={{ fontWeight: 600, fontSize: 14 }}>
+                            {MONTHS[viewMonth]} {viewYear}
+                          </span>
+                          <div style={{ display: "flex", gap: 4 }}>
+                            <button onClick={prevMonth} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#555", padding: "2px 4px", borderRadius: 4, lineHeight: 1 }}>▲</button>
+                            <button onClick={nextMonth} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#555", padding: "2px 4px", borderRadius: 4, lineHeight: 1 }}>▼</button>
+                          </div>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 30px)", gap: 2, marginBottom: 4 }}>
+                          {DAYS.map((d, i) => (
+                            <div key={`${d}-${i}`} style={{ textAlign: "center", fontSize: 12, color: "#888", fontWeight: 600, height: 28, lineHeight: "28px" }}>
+                              {d}
+                            </div>
+                          ))}
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 30px)", gap: 2 }}>
+                          {grid.map((cell, i) => (
+                            <div
+                              key={`${cell.day}-${i}`}
+                              onClick={() => !cell.other && handleDayClick(cell.day)}
+                              style={{
+                                height: 30,
+                                width: 30,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                borderRadius: 6,
+                                fontSize: 13,
+                                cursor: cell.other ? "default" : "pointer",
+                                color: cell.other ? "#ccc" : isSelectedDay(cell.day) ? "#fff" : "#333",
+                                background:
+                                  !cell.other && isSelectedDay(cell.day)
+                                    ? "#1DAA61"
+                                    : !cell.other && isToday(cell.day) && !isSelectedDay(cell.day)
+                                    ? "#e8f9f0"
+                                    : "transparent",
+                                fontWeight: isSelectedDay(cell.day) ? 700 : 400,
+                                transition: "background 0.12s",
+                              }}
+                            >
+                              {cell.day}
+                            </div>
+                          ))}
+                        </div>
+
+                        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12 }}>
+                          <span
+                            style={{ fontSize: 13, color: "#1DAA61", cursor: "pointer", fontWeight: 500 }}
+                            onClick={() => {
+                              const t = new Date();
+                              applyDateToPicker(t);
+                            }}
+                          >
+                            Today
+                          </span>
+                          <span
+                            style={{ fontSize: 13, color: "#1DAA61", cursor: "pointer", fontWeight: 500 }}
+                            onClick={() => setOpenPicker(false)}
+                          >
+                            Close
+                          </span>
+                        </div>
+                      </div>
+
+                      <div style={{ width: 1, background: "#e5e7eb" }} />
+
+                      <div style={{ display: "flex", padding: "16px 8px", gap: 4 }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                          <div style={{ display: "flex", gap: 4, marginBottom: 8 }}>
+                            {["hh", "mm", "ss"].map((label) => (
+                              <div key={label} style={{ width: 40, textAlign: "center", fontSize: 11, color: "#aaa", fontWeight: 600 }}>
+                                {label}
+                              </div>
+                            ))}
+                          </div>
+                          <div style={{ display: "flex", gap: 4 }}>
+                            <ScrollColumn values={Array.from({ length: 24 }, (_, i) => i)} selected={hour} onSelect={setHour} format2 />
+                            <ScrollColumn values={Array.from({ length: 60 }, (_, i) => i)} selected={minute} onSelect={setMinute} format2 />
+                            <ScrollColumn values={Array.from({ length: 60 }, (_, i) => i)} selected={second} onSelect={setSecond} format2 />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="px-4 py-3 border-b border-[#d8dde1] space-y-2">
@@ -232,7 +467,7 @@ export default function Home() {
                         setStartIndex(null);
                         setEndIndex(null);
                         setLoadTime(null);
-                        setSearchDateTime("");
+                        applyDateToPicker(new Date());
                       }}
                       className="text-xs text-[#d10000] hover:underline"
                     >
@@ -254,7 +489,7 @@ export default function Home() {
                       </button>
                     </div>
                     <p className="text-xs text-[#667781]">Messages in selected range</p>
-                    <p className="mb-3 text-2xl font-semibold text-[#00a884]">{filteredMessages.length}</p>
+                    <p className="mb-3 text-2xl font-semibold text-[#1DAA61]">{filteredMessages.length}</p>
                     <div className="space-y-1.5">
                       {stats.map(([sender, count], idx) => (
                         <div key={sender} className="flex items-center justify-between rounded-md bg-[#f7f8fa] px-2 py-1.5 text-sm">
@@ -288,7 +523,7 @@ export default function Home() {
                   {paginatedMessages.map((msg, i) => {
                     const actualIndex = (currentPage - 1) * PAGE_SIZE + i;
                     return (
-                      <div key={actualIndex} id={`msg-${actualIndex}`} className={`max-w-[76%] rounded-lg border px-3 py-2 shadow-sm group ${getMessageColorClass(actualIndex)} ${getBubbleLayout(actualIndex)}`}>
+                      <div key={actualIndex} id={`msg-${actualIndex}`} className={`max-w-[92%] rounded-lg border px-3 py-2 shadow-sm group ${getMessageColorClass(actualIndex)} ${getBubbleLayout()}`}>
                         <div className="mb-1 flex items-start justify-between gap-2 text-[11px]">
                           <span className="font-semibold text-[#50715d] truncate">{msg.sender}</span>
                           <span className="text-[#667781] whitespace-nowrap">{formatTime24h(msg.parsedDate, msg.dateStr)}</span>
