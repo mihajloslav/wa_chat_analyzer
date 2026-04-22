@@ -309,11 +309,11 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-[#d1d7db] p-3 md:p-5 text-[#111b21]">
+    <main className="min-h-screen bg-[#f7f5f3] p-3 md:p-5 text-[#111b21]">
       <div className="mx-auto h-[94vh] max-w-[1450px] overflow-hidden rounded-xl border border-[#c7cdd1] bg-white shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
         <div className="flex h-full">
-          <aside className="w-full max-w-[370px] border-r border-[#d8dde1] bg-[#f0f2f5] flex flex-col">
-            <div className="bg-[#f0f2f5] px-4 py-3 border-b border-[#d8dde1]">
+          <aside className="w-full max-w-[370px] border-r border-[#d8dde1] bg-[#ffffff] flex flex-col">
+            <div className="bg-[#ffffff] px-4 py-3 border-b border-[#d8dde1]">
               <div className="flex items-center justify-between">
                 <h1 className="text-[22px] font-semibold text-[#1DAA61]">WhatsApp Analyzer</h1>
                 {loadTime !== null && messages.length > 0 && (
@@ -558,7 +558,7 @@ export default function Home() {
                       <h2 className="text-sm font-semibold text-[#111b21]">Selection analysis</h2>
                       <button
                         onClick={handleCopy}
-                        className="rounded-md bg-[#f0f2f5] px-2 py-1 text-xs text-[#3b4a54] hover:bg-[#e4e8eb]"
+                        className="rounded-md bg-[#ffffff] px-2 py-1 text-xs text-[#3b4a54] hover:bg-[#e4e8eb]"
                         title="Copy all results"
                       >
                         Copy
@@ -581,7 +581,7 @@ export default function Home() {
           </aside>
 
           <section className="flex min-w-0 flex-1 flex-col bg-[#efeae2]">
-            <div className="flex items-center justify-between border-b border-[#d8dde1] bg-[#f0f2f5] px-5 py-3">
+            <div className="flex items-center justify-between border-b border-[#d8dde1] bg-[#ffffff] px-5 py-3">
               <div>
                 <h3 className="text-sm font-semibold text-[#111b21]">Chat Messages</h3>
                 <p className="text-xs text-[#667781]">Search jumps to the closest date/time message.</p>
@@ -633,7 +633,7 @@ export default function Home() {
             )}
 
             {totalPages > 1 && (
-              <div className="flex items-center justify-between border-t border-[#d8dde1] bg-[#f0f2f5] px-5 py-2.5">
+              <div className="flex items-center justify-between border-t border-[#d8dde1] bg-[#ffffff] px-5 py-2.5">
                 <button
                   disabled={currentPage === 1}
                   onClick={() => {
