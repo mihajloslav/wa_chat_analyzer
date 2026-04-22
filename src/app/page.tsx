@@ -281,15 +281,29 @@ export default function Home() {
   };
 
   const getMessageColorClass = (actualIndex: number) => {
-    if (startIndex === null || endIndex === null) return "bg-white border-slate-100 opacity-60";
-    if (actualIndex === startIndex) return "bg-green-100 border-green-300 ring-1 ring-green-400";
-    if (actualIndex === endIndex) return "bg-red-100 border-red-300 ring-1 ring-red-400";
-    if (actualIndex > startIndex && actualIndex < endIndex) return "bg-blue-50 border-blue-200";
-    return "bg-white border-slate-100 opacity-60"; // out of selected range
+    if (startIndex === null || endIndex === null) return "bg-white border-[#d8dde1]";
+    if (actualIndex === startIndex) return "bg-white border-green-400 ring-1 ring-green-300";
+    if (actualIndex === endIndex) return "bg-white border-red-400 ring-1 ring-red-300";
+    if (actualIndex > startIndex && actualIndex < endIndex) return "bg-white border-[#cfd8dd]";
+    return "bg-white border-[#d8dde1]"; // out of selected range
   };
 
   const getBubbleLayout = () => {
     return "ml-0 mr-auto";
+  };
+
+  const getBubbleChainClass = (actualIndex: number) => {
+    const currentSender = messages[actualIndex]?.sender;
+    const prevSender = actualIndex > 0 ? messages[actualIndex - 1]?.sender : null;
+    const nextSender = actualIndex < messages.length - 1 ? messages[actualIndex + 1]?.sender : null;
+
+    const hasPrevSame = prevSender === currentSender;
+    const hasNextSame = nextSender === currentSender;
+
+    if (!hasPrevSame && !hasNextSame) return "mt-3 rounded-2xl";
+    if (!hasPrevSame && hasNextSame) return "mt-3 rounded-2xl rounded-bl-md";
+    if (hasPrevSame && hasNextSame) return "mt-1 rounded-2xl rounded-tl-md rounded-bl-md";
+    return "mt-1 rounded-2xl rounded-tl-md";
   };
 
   return (
@@ -324,7 +338,7 @@ export default function Home() {
               </div>
             ) : (
               <>
-                <div className="px-4 py-3 space-y-3 border-b border-[#d8dde1]">
+                <div className="relative px-4 py-3 space-y-3 border-b border-[#d8dde1] z-30">
                   <label className="text-xs font-medium tracking-wide text-[#667781]">Find by date and time</label>
                   <div className="flex gap-2">
                     <div
@@ -346,6 +360,10 @@ export default function Home() {
                     <div
                       style={{
                         display: "inline-flex",
+                        position: "absolute",
+                        top: 84,
+                        left: 16,
+                        zIndex: 200,
                         background: "#fff",
                         borderRadius: 12,
                         boxShadow: "0 4px 24px rgba(0,0,0,0.13)",
@@ -518,12 +536,12 @@ export default function Home() {
                 <div className="rounded-xl bg-white/80 px-5 py-4 text-sm text-[#3b4a54] shadow-sm">Parsing chat file...</div>
               </div>
             ) : (
-              <div className="wa-chat-bg flex-1 overflow-y-auto px-4 py-4" ref={listRef}>
-                <div className="space-y-3">
+                <div className="wa-chat-bg flex-1 overflow-y-auto px-4 py-4" ref={listRef}>
+                <div>
                   {paginatedMessages.map((msg, i) => {
                     const actualIndex = (currentPage - 1) * PAGE_SIZE + i;
                     return (
-                      <div key={actualIndex} id={`msg-${actualIndex}`} className={`max-w-[92%] rounded-lg border px-3 py-2 shadow-sm group ${getMessageColorClass(actualIndex)} ${getBubbleLayout()}`}>
+                      <div key={actualIndex} id={`msg-${actualIndex}`} className={`w-[98%] border px-3 py-2 shadow-sm group ${getMessageColorClass(actualIndex)} ${getBubbleLayout()} ${getBubbleChainClass(actualIndex)}`}>
                         <div className="mb-1 flex items-start justify-between gap-2 text-[11px]">
                           <span className="font-semibold text-[#50715d] truncate">{msg.sender}</span>
                           <span className="text-[#667781] whitespace-nowrap">{formatTime24h(msg.parsedDate, msg.dateStr)}</span>
