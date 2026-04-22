@@ -96,6 +96,7 @@ export default function Home() {
   const [hour, setHour] = useState(() => new Date().getHours());
   const [minute, setMinute] = useState(() => new Date().getMinutes());
   const [second, setSecond] = useState(() => new Date().getSeconds());
+  const [showMonthYearPicker, setShowMonthYearPicker] = useState(false);
   
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -268,6 +269,7 @@ export default function Home() {
   };
 
   const prevDays = getDaysInMonth(viewYear, viewMonth === 0 ? 11 : viewMonth - 1);
+  const yearOptions = Array.from({ length: 41 }, (_, i) => new Date().getFullYear() - 20 + i);
   const grid: Array<{ day: number; other: boolean }> = [];
   for (let i = 0; i < firstDay; i += 1) grid.push({ day: prevDays - firstDay + 1 + i, other: true });
   for (let d = 1; d <= daysInMonth; d += 1) grid.push({ day: d, other: false });
@@ -374,13 +376,65 @@ export default function Home() {
                       <div style={{ padding: "16px 12px", minWidth: 230 }}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                           <span style={{ fontWeight: 600, fontSize: 14 }}>
-                            {MONTHS[viewMonth]} {viewYear}
+                            <button
+                              onClick={() => setShowMonthYearPicker((v) => !v)}
+                              style={{
+                                background: "none",
+                                border: "none",
+                                cursor: "pointer",
+                                fontWeight: 600,
+                                fontSize: 14,
+                                color: "#111",
+                                padding: 0,
+                              }}
+                            >
+                              {MONTHS[viewMonth]} {viewYear} ▾
+                            </button>
                           </span>
                           <div style={{ display: "flex", gap: 4 }}>
                             <button onClick={prevMonth} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#555", padding: "2px 4px", borderRadius: 4, lineHeight: 1 }}>▲</button>
                             <button onClick={nextMonth} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#555", padding: "2px 4px", borderRadius: 4, lineHeight: 1 }}>▼</button>
                           </div>
                         </div>
+
+                        {showMonthYearPicker && (
+                          <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                            <select
+                              value={viewMonth}
+                              onChange={(e) => setViewMonth(Number(e.target.value))}
+                              style={{
+                                flex: 1,
+                                border: "1px solid #d8dde1",
+                                borderRadius: 8,
+                                padding: "6px 8px",
+                                fontSize: 13,
+                              }}
+                            >
+                              {MONTHS.map((monthName, index) => (
+                                <option key={monthName} value={index}>
+                                  {monthName}
+                                </option>
+                              ))}
+                            </select>
+                            <select
+                              value={viewYear}
+                              onChange={(e) => setViewYear(Number(e.target.value))}
+                              style={{
+                                width: 95,
+                                border: "1px solid #d8dde1",
+                                borderRadius: 8,
+                                padding: "6px 8px",
+                                fontSize: 13,
+                              }}
+                            >
+                              {yearOptions.map((year) => (
+                                <option key={year} value={year}>
+                                  {year}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
 
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 30px)", gap: 2, marginBottom: 4 }}>
                           {DAYS.map((d, i) => (
@@ -426,13 +480,17 @@ export default function Home() {
                             onClick={() => {
                               const t = new Date();
                               applyDateToPicker(t);
+                              setShowMonthYearPicker(false);
                             }}
                           >
                             Today
                           </span>
                           <span
                             style={{ fontSize: 13, color: "#1DAA61", cursor: "pointer", fontWeight: 500 }}
-                            onClick={() => setOpenPicker(false)}
+                            onClick={() => {
+                              setOpenPicker(false);
+                              setShowMonthYearPicker(false);
+                            }}
                           >
                             Close
                           </span>
