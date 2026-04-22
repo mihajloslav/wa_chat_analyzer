@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState, useMemo, useRef } from "react";
 import { ChatMessage, parseChat } from "@/utils/parseChat";
 
@@ -315,7 +316,16 @@ export default function Home() {
           <aside className="w-full max-w-[370px] border-r border-[#d8dde1] bg-[#ffffff] flex flex-col">
             <div className="bg-[#ffffff] px-4 py-3 border-b border-[#d8dde1]">
               <div className="flex items-center justify-between">
-                <h1 className="text-[22px] font-semibold text-[#1DAA61]">WhatsApp Analyzer</h1>
+                <h1 className="flex items-center gap-1.5 text-[18px] font-semibold text-[#25D366]">
+                  <Image
+                    src="/wa_chat_analyzer.svg"
+                    alt="WhatsApp Analyzer icon"
+                    width={28}
+                    height={28}
+                    className="h-7 w-7 shrink-0"
+                  />
+                  <span>WhatsApp Chat Analyzer</span>
+                </h1>
                 {loadTime !== null && messages.length > 0 && (
                   <span className="rounded-full bg-[#d9fdd3] px-3 py-1 text-xs font-medium text-[#087f5b]">
                     {(loadTime / 1000).toFixed(2)}s
@@ -352,7 +362,7 @@ export default function Home() {
                     </div>
                     <button
                       onClick={handleSearchByDateTime}
-                      className="rounded-lg bg-[#1DAA61] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#189754] disabled:cursor-not-allowed disabled:opacity-60"
+                      className="rounded-lg bg-[#25D366] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#189754] disabled:cursor-not-allowed disabled:opacity-60"
                       disabled={messages.length === 0}
                     >
                       Search
@@ -461,7 +471,7 @@ export default function Home() {
                                 color: cell.other ? "#ccc" : isSelectedDay(cell.day) ? "#fff" : "#333",
                                 background:
                                   !cell.other && isSelectedDay(cell.day)
-                                    ? "#1DAA61"
+                                    ? "#25D366"
                                     : !cell.other && isToday(cell.day) && !isSelectedDay(cell.day)
                                     ? "#e8f9f0"
                                     : "transparent",
@@ -476,7 +486,7 @@ export default function Home() {
 
                         <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12 }}>
                           <span
-                            style={{ fontSize: 13, color: "#1DAA61", cursor: "pointer", fontWeight: 500 }}
+                            style={{ fontSize: 13, color: "#25D366", cursor: "pointer", fontWeight: 500 }}
                             onClick={() => {
                               const t = new Date();
                               applyDateToPicker(t);
@@ -486,7 +496,7 @@ export default function Home() {
                             Today
                           </span>
                           <span
-                            style={{ fontSize: 13, color: "#1DAA61", cursor: "pointer", fontWeight: 500 }}
+                            style={{ fontSize: 13, color: "#25D366", cursor: "pointer", fontWeight: 500 }}
                             onClick={() => {
                               setOpenPicker(false);
                               setShowMonthYearPicker(false);
@@ -565,7 +575,7 @@ export default function Home() {
                       </button>
                     </div>
                     <p className="text-xs text-[#667781]">Messages in selected range</p>
-                    <p className="mb-3 text-2xl font-semibold text-[#1DAA61]">{filteredMessages.length}</p>
+                    <p className="mb-3 text-2xl font-semibold text-[#25D366]">{filteredMessages.length}</p>
                     <div className="space-y-1.5">
                       {stats.map(([sender, count], idx) => (
                         <div key={sender} className="flex items-center justify-between rounded-md bg-[#f7f8fa] px-2 py-1.5 text-sm">
