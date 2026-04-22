@@ -341,7 +341,7 @@ export default function Home() {
                   <input type="file" accept=".txt" onChange={handleFileUpload} className="hidden" id="file-upload" />
                   <label
                     htmlFor="file-upload"
-                    className="inline-flex cursor-pointer items-center rounded-full bg-[#1DAA61] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[#189754]"
+                    className="inline-flex cursor-pointer items-center rounded-full bg-[#25D366] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[#189754]"
                   >
                     Choose .txt file
                   </label>
