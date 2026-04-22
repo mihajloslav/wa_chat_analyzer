@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useRef } from "react";
+import DatePicker from "react-datepicker";
 import { ChatMessage, parseChat } from "@/utils/parseChat";
 
 const PAGE_SIZE = 100;
@@ -13,7 +14,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadTime, setLoadTime] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [searchDateTime, setSearchDateTime] = useState("");
+  const [searchDateTime, setSearchDateTime] = useState<Date | null>(null);
   
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -25,7 +26,7 @@ export default function Home() {
     setLoadTime(null);
     setMessages([]);
     setCurrentPage(1);
-    setSearchDateTime("");
+    setSearchDateTime(null);
 
     setTimeout(() => {
       const startTime = performance.now();
@@ -40,7 +41,7 @@ export default function Home() {
         if (parsed.length > 0) {
           setStartIndex(0);
           setEndIndex(parsed.length - 1);
-          setSearchDateTime(toDatetimeLocal(parsed[0].parsedDate));
+          setSearchDateTime(parsed[0].parsedDate ?? null);
         }
         
         const endTime = performance.now();
@@ -123,16 +124,13 @@ export default function Home() {
   };
 
   const handleSearchByDateTime = () => {
-    const ts = new Date(searchDateTime).getTime();
-    if (isNaN(ts) || messages.length === 0) return;
+    if (!searchDateTime || messages.length === 0) return;
+
+    const ts = searchDateTime.getTime();
+    if (isNaN(ts)) return;
 
     const idx = findClosestMessageIndex(ts);
     if (idx === -1) return;
-
-    setStartIndex(idx);
-    if (endIndex !== null && idx > endIndex) {
-      setEndIndex(messages.length - 1);
-    }
 
     jumpToMessageIndex(idx);
   };
@@ -200,25 +198,22 @@ export default function Home() {
                 <div className="flex flex-wrap gap-4 mb-4">
                   <div className="flex-1 min-w-[240px]">
                     <label className="block text-sm font-medium text-slate-700 mb-1">Find by date and time</label>
-                    <input 
-                      type="datetime-local" 
-                      lang="en-GB"
-                      step="1"
-                      value={searchDateTime}
-                      onChange={e => setSearchDateTime(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === "Enter") {
-                          handleSearchByDateTime();
-                        }
-                      }}
-                      className="dt-24h w-full bg-slate-100 border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm"
+                    <DatePicker
+                      selected={searchDateTime}
+                      onChange={(date: Date | null) => setSearchDateTime(date)}
+                      showTimeSelect
+                      timeIntervals={1}
+                      dateFormat="yyyy-MM-dd HH:mm:ss"
+                      timeFormat="HH:mm"
+                      placeholderText="Select date and time"
+                      className="w-full bg-slate-100 border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm"
                     />
                   </div>
                   <div className="flex items-end">
                     <button
                       onClick={handleSearchByDateTime}
                       className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition text-sm disabled:opacity-50"
-                      disabled={!searchDateTime || messages.length === 0}
+                      disabled={searchDateTime === null || messages.length === 0}
                     >
                       Search
                     </button>
@@ -242,7 +237,7 @@ export default function Home() {
                       Reset selection (All)
                     </button>
                     <button 
-                      onClick={() => { setMessages([]); setStartIndex(null); setEndIndex(null); setLoadTime(null); setSearchDateTime(""); }}
+                      onClick={() => { setMessages([]); setStartIndex(null); setEndIndex(null); setLoadTime(null); setSearchDateTime(null); }}
                       className="text-xs text-red-500 hover:bg-red-50 px-2 py-1 rounded transition"
                     >
                       Clear file
