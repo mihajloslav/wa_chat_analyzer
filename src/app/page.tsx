@@ -7,12 +7,13 @@ const PAGE_SIZE = 100;
 
 export default function Home() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  // Sada koristimo apsolutne indekse poruka umesto vremena
+  // Absolute message indexes are used for selection
   const [startIndex, setStartIndex] = useState<number | null>(null);
   const [endIndex, setEndIndex] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [loadTime, setLoadTime] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchDateTime, setSearchDateTime] = useState("");
   
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -24,6 +25,7 @@ export default function Home() {
     setLoadTime(null);
     setMessages([]);
     setCurrentPage(1);
+    setSearchDateTime("");
 
     setTimeout(() => {
       const startTime = performance.now();
@@ -38,6 +40,7 @@ export default function Home() {
         if (parsed.length > 0) {
           setStartIndex(0);
           setEndIndex(parsed.length - 1);
+          setSearchDateTime(toDatetimeLocal(parsed[0].parsedDate));
         }
         
         const endTime = performance.now();
@@ -75,16 +78,16 @@ export default function Home() {
   }, [filteredMessages]);
 
   const handleCopy = () => {
-    let result = `=== ANALIZA WHATSAPP CHATA ===\n`;
-    result += `Ukupno poruka u rasponu: ${filteredMessages.length}\n`;
-    result += `Period: ${startValue.replace('T', ' ')} do ${endValue.replace('T', ' ')}\n`;
+    let result = `=== WHATSAPP CHAT ANALYSIS ===\n`;
+    result += `Total messages in range: ${filteredMessages.length}\n`;
+    result += `Range: ${startValue.replace('T', ' ')} to ${endValue.replace('T', ' ')}\n`;
     result += `------------------\n`;
     stats.forEach(([sender, count], idx) => {
       result += `${idx + 1}. ${sender}: ${count}\n`;
     });
 
     navigator.clipboard.writeText(result);
-    alert("Kopirano u clipboard!");
+    alert("Copied to clipboard!");
   };
 
   const jumpToMessageIndex = (index: number) => {
@@ -101,6 +104,39 @@ export default function Home() {
     }, 100);
   };
 
+  const findClosestMessageIndex = (targetTs: number) => {
+    let closestIdx = -1;
+    let closestDiff = Number.POSITIVE_INFINITY;
+
+    messages.forEach((message, idx) => {
+      const messageTs = message.parsedDate?.getTime();
+      if (messageTs === undefined) return;
+
+      const diff = Math.abs(messageTs - targetTs);
+      if (diff < closestDiff) {
+        closestDiff = diff;
+        closestIdx = idx;
+      }
+    });
+
+    return closestIdx;
+  };
+
+  const handleSearchByDateTime = () => {
+    const ts = new Date(searchDateTime).getTime();
+    if (isNaN(ts) || messages.length === 0) return;
+
+    const idx = findClosestMessageIndex(ts);
+    if (idx === -1) return;
+
+    setStartIndex(idx);
+    if (endIndex !== null && idx > endIndex) {
+      setEndIndex(messages.length - 1);
+    }
+
+    jumpToMessageIndex(idx);
+  };
+
   const formatTime24h = (date: Date | null, originalStr: string) => {
     if (!date) return originalStr.replace(/am|pm/i, '').trim();
     const pad = (n: number) => n.toString().padStart(2, "0");
@@ -112,7 +148,7 @@ export default function Home() {
     if (actualIndex === startIndex) return "bg-green-100 border-green-300 ring-1 ring-green-400";
     if (actualIndex === endIndex) return "bg-red-100 border-red-300 ring-1 ring-red-400";
     if (actualIndex > startIndex && actualIndex < endIndex) return "bg-blue-50 border-blue-200";
-    return "bg-white border-slate-100 opacity-60"; // van opsega
+    return "bg-white border-slate-100 opacity-60"; // out of selected range
   };
 
   return (
@@ -122,11 +158,11 @@ export default function Home() {
         <div className="bg-blue-600 text-white p-6 flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold">WhatsApp Analyzer</h1>
-            <p className="text-blue-100 mt-1">Analizirajte vaše .txt chat eksporte</p>
+            <p className="text-blue-100 mt-1">Analyze your .txt chat exports</p>
           </div>
           {loadTime !== null && messages.length > 0 && (
             <div className="text-sm bg-blue-700 px-3 py-1 rounded shadow-sm text-blue-50">
-              Učitano za {(loadTime / 1000).toFixed(2)}s
+              Loaded in {(loadTime / 1000).toFixed(2)}s
             </div>
           )}
         </div>
@@ -139,8 +175,8 @@ export default function Home() {
             {isLoading ? (
               <div className="flex-1 flex flex-col items-center justify-center bg-slate-50 rounded-xl border border-slate-200">
                 <div className="animate-spin mb-4 border-4 border-blue-200 border-t-blue-600 rounded-full w-12 h-12"></div>
-                <h3 className="text-lg font-medium text-slate-700">Parsiramo stotine linija texta...</h3>
-                <p className="text-slate-400 text-sm mt-2">Ovo može potrajati par sekundi zavisno od veličine fajla.</p>
+                <h3 className="text-lg font-medium text-slate-700">Parsing hundreds of text lines...</h3>
+                <p className="text-slate-400 text-sm mt-2">This may take a few seconds depending on file size.</p>
               </div>
             ) : !messages.length ? (
               <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-slate-300 rounded-xl bg-slate-50">
@@ -155,82 +191,61 @@ export default function Home() {
                   htmlFor="file-upload" 
                   className="cursor-pointer bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition"
                 >
-                  Odaberi .txt datoteku
+                  Choose .txt file
                 </label>
-                <p className="mt-4 text-slate-500 text-sm">Podržani su Android i iOS formati</p>
+                <p className="mt-4 text-slate-500 text-sm">Android and iOS formats are supported</p>
               </div>
             ) : (
               <>
                 <div className="flex flex-wrap gap-4 mb-4">
-                  <div className="flex-1 min-w-[200px]">
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Početak (Od)</label>
+                  <div className="flex-1 min-w-[240px]">
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Find by date and time</label>
                     <input 
                       type="datetime-local" 
+                      lang="en-GB"
                       step="1"
-                      value={startValue}
-                      onChange={e => {
-                        const ts = new Date(e.target.value).getTime();
-                        if (isNaN(ts)) return;
-                        // Pronađi indeks PRVE poruke koja je na ili nakon ovog vremena
-                        const idx = messages.findIndex(m => (m.parsedDate?.getTime() || 0) >= ts);
-                        if (idx !== -1) {
-                          setStartIndex(idx);
-                          if (endIndex !== null && idx > endIndex) setEndIndex(messages.length - 1);
-                          jumpToMessageIndex(idx);
+                      value={searchDateTime}
+                      onChange={e => setSearchDateTime(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === "Enter") {
+                          handleSearchByDateTime();
                         }
                       }}
-                      className="w-full bg-slate-100 border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm"
+                      className="dt-24h w-full bg-slate-100 border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm"
                     />
                   </div>
-                  <div className="flex-1 min-w-[200px]">
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Kraj (Do)</label>
-                    <input 
-                      type="datetime-local" 
-                      step="1"
-                      value={endValue}
-                      onChange={e => {
-                        const ts = new Date(e.target.value).getTime();
-                        if (isNaN(ts)) return;
-                        // Pronađi indeks POSLEDNJE poruke koja je pre ili na ovo vreme
-                        let idx = -1;
-                        for(let j = messages.length - 1; j >= 0; j--) {
-                          if ((messages[j].parsedDate?.getTime() || 0) <= ts) {
-                            idx = j;
-                            break;
-                          }
-                        }
-                        if (idx !== -1) {
-                          setEndIndex(idx);
-                          if (startIndex !== null && idx < startIndex) setStartIndex(0);
-                          jumpToMessageIndex(idx);
-                        }
-                      }}
-                      className="w-full bg-slate-100 border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm"
-                    />
+                  <div className="flex items-end">
+                    <button
+                      onClick={handleSearchByDateTime}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition text-sm disabled:opacity-50"
+                      disabled={!searchDateTime || messages.length === 0}
+                    >
+                      Search
+                    </button>
                   </div>
                 </div>
 
                 <div className="flex flex-wrap justify-between items-center mb-4 gap-2">
                   <div className="text-sm text-slate-500 flex flex-wrap gap-2 items-center">
-                    <span>Skokovi:</span>
-                    <button onClick={() => jumpToMessageIndex(0)} className="bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-1 rounded text-xs transition border border-slate-300">Prva u chetu</button>
-                    <button onClick={() => jumpToMessageIndex(messages.length - 1)} className="bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-1 rounded text-xs transition border border-slate-300">Poslednja u chetu</button>
+                    <span>Quick jumps:</span>
+                    <button onClick={() => jumpToMessageIndex(0)} className="bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-1 rounded text-xs transition border border-slate-300">First in chat</button>
+                    <button onClick={() => jumpToMessageIndex(messages.length - 1)} className="bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-1 rounded text-xs transition border border-slate-300">Last in chat</button>
                     <div className="w-px h-4 relative bg-slate-300 mx-1"></div>
-                    <button onClick={() => startIndex !== null && jumpToMessageIndex(startIndex)} className="bg-green-100 hover:bg-green-200 text-green-700 px-2 py-1 rounded text-xs transition border border-green-300">Početna (izabrana)</button>
-                    <button onClick={() => endIndex !== null && jumpToMessageIndex(endIndex)} className="bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded text-xs transition border border-red-300">Krajnja (izabrana)</button>
+                    <button onClick={() => startIndex !== null && jumpToMessageIndex(startIndex)} className="bg-green-100 hover:bg-green-200 text-green-700 px-2 py-1 rounded text-xs transition border border-green-300">Selected start</button>
+                    <button onClick={() => endIndex !== null && jumpToMessageIndex(endIndex)} className="bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded text-xs transition border border-red-300">Selected end</button>
                   </div>
                   <div className="flex gap-2">
                     <button 
                       onClick={() => { setStartIndex(0); setEndIndex(messages.length - 1); }}
                       className="text-xs text-orange-600 hover:bg-orange-50 px-2 py-1 border border-orange-200 rounded transition"
                     >
-                      Poništi selekciju (Sve)
+                      Reset selection (All)
                     </button>
                     <button 
-                      onClick={() => { setMessages([]); setStartIndex(null); setEndIndex(null); setLoadTime(null); }}
+                      onClick={() => { setMessages([]); setStartIndex(null); setEndIndex(null); setLoadTime(null); setSearchDateTime(""); }}
                       className="text-xs text-red-500 hover:bg-red-50 px-2 py-1 rounded transition"
                     >
-                      Očisti fajl
+                      Clear file
                     </button>
                   </div>
                 </div>
@@ -253,7 +268,7 @@ export default function Home() {
                               }}
                               className="text-[10px] bg-green-100 border border-green-300 text-green-700 px-2 py-0.5 rounded hover:bg-green-200 transition"
                             >
-                              Izaberi kao Početnu
+                              Set as Start
                             </button>
                             <button 
                               onClick={() => {
@@ -262,7 +277,7 @@ export default function Home() {
                               }}
                               className="text-[10px] bg-red-100 border border-red-300 text-red-700 px-2 py-0.5 rounded hover:bg-red-200 transition"
                             >
-                              Izaberi kao Krajnju
+                              Set as End
                             </button>
                         </div>
                       </div>
@@ -271,7 +286,7 @@ export default function Home() {
                   )})}
                   {messages.length === 0 && (
                     <div className="text-center text-slate-400 text-sm italic pt-4">
-                       Nema učitanih poruka.
+                       No messages loaded.
                     </div>
                   )}
                 </div>
@@ -287,10 +302,10 @@ export default function Home() {
                       }}
                       className="px-3 py-1 bg-slate-200 text-slate-700 rounded disabled:opacity-50 text-sm"
                     >
-                      &larr; Prethodna ({PAGE_SIZE})
+                      &larr; Previous ({PAGE_SIZE})
                     </button>
                     <span className="text-sm text-slate-500">
-                      Strana {currentPage} od {totalPages}
+                      Page {currentPage} of {totalPages}
                     </span>
                     <button 
                       disabled={currentPage === totalPages}
@@ -300,7 +315,7 @@ export default function Home() {
                       }}
                       className="px-3 py-1 bg-slate-200 text-slate-700 rounded disabled:opacity-50 text-sm"
                     >
-                      Sledeća ({PAGE_SIZE}) &rarr;
+                      Next ({PAGE_SIZE}) &rarr;
                     </button>
                   </div>
                 )}
@@ -312,18 +327,18 @@ export default function Home() {
           {messages.length > 0 && !isLoading && (
             <div className="w-[300px] bg-slate-50 flex flex-col border-l border-slate-200">
               <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-white">
-                <h2 className="font-bold text-slate-800">Analiza selekcije</h2>
+                <h2 className="font-bold text-slate-800">Selection analysis</h2>
                 <button 
                   onClick={handleCopy}
                   className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition"
-                  title="Kopiraj sve rezultate"
+                  title="Copy all results"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
                 </button>
               </div>
               <div className="p-6 flex-1 overflow-y-auto">
                 <div className="mb-6 pb-6 border-b border-slate-200">
-                  <div className="text-sm text-slate-500 mb-1">Poruka u obeleženom opsegu</div>
+                  <div className="text-sm text-slate-500 mb-1">Messages in selected range</div>
                   <div className="text-3xl font-light text-slate-800 text-blue-600">{filteredMessages.length}</div>
                 </div>
                 
@@ -340,7 +355,7 @@ export default function Home() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-slate-500 text-center italic">Prazan opseg, promenite datume da biste videli statistiku.</p>
+                  <p className="text-sm text-slate-500 text-center italic">Empty range. Change selection to see stats.</p>
                 )}
               </div>
             </div>

@@ -24,3 +24,8 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Force a 24-hour editing UI for native datetime input where supported. */
+.dt-24h::-webkit-datetime-edit-ampm-field {
+  display: none;
+}
