@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo, useRef } from "react";
-import DatePicker from "react-datepicker";
 import { ChatMessage, parseChat } from "@/utils/parseChat";
 
 const PAGE_SIZE = 100;
@@ -14,7 +13,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadTime, setLoadTime] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [searchDateTime, setSearchDateTime] = useState<Date | null>(null);
+  const [searchDateTime, setSearchDateTime] = useState("");
   
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -26,7 +25,7 @@ export default function Home() {
     setLoadTime(null);
     setMessages([]);
     setCurrentPage(1);
-    setSearchDateTime(null);
+    setSearchDateTime("");
 
     setTimeout(() => {
       const startTime = performance.now();
@@ -41,7 +40,7 @@ export default function Home() {
         if (parsed.length > 0) {
           setStartIndex(0);
           setEndIndex(parsed.length - 1);
-          setSearchDateTime(parsed[0].parsedDate ?? null);
+          setSearchDateTime(toDatetimeLocal(parsed[0].parsedDate));
         }
         
         const endTime = performance.now();
@@ -124,10 +123,8 @@ export default function Home() {
   };
 
   const handleSearchByDateTime = () => {
-    if (!searchDateTime || messages.length === 0) return;
-
-    const ts = searchDateTime.getTime();
-    if (isNaN(ts)) return;
+    const ts = new Date(searchDateTime).getTime();
+    if (isNaN(ts) || messages.length === 0) return;
 
     const idx = findClosestMessageIndex(ts);
     if (idx === -1) return;
@@ -149,212 +146,207 @@ export default function Home() {
     return "bg-white border-slate-100 opacity-60"; // out of selected range
   };
 
-  return (
-    <main className="min-h-screen bg-slate-50 text-slate-900 p-8 font-sans">
-      <div className="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col h-[90vh]">
-        {/* Header */}
-        <div className="bg-blue-600 text-white p-6 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold">WhatsApp Analyzer</h1>
-            <p className="text-blue-100 mt-1">Analyze your .txt chat exports</p>
-          </div>
-          {loadTime !== null && messages.length > 0 && (
-            <div className="text-sm bg-blue-700 px-3 py-1 rounded shadow-sm text-blue-50">
-              Loaded in {(loadTime / 1000).toFixed(2)}s
-            </div>
-          )}
-        </div>
+  const getBubbleLayout = (actualIndex: number) => {
+    if (startIndex !== null && actualIndex === startIndex) return "ml-0 mr-auto";
+    if (endIndex !== null && actualIndex === endIndex) return "ml-auto mr-0";
+    return actualIndex % 2 === 0 ? "ml-auto mr-0" : "ml-0 mr-auto";
+  };
 
-        {/* Content */}
-        <div className="flex-1 flex overflow-hidden">
-          
-          {/* Main Panel */}
-          <div className="flex-1 flex flex-col p-6 border-r border-slate-100 min-w-0">
-            {isLoading ? (
-              <div className="flex-1 flex flex-col items-center justify-center bg-slate-50 rounded-xl border border-slate-200">
-                <div className="animate-spin mb-4 border-4 border-blue-200 border-t-blue-600 rounded-full w-12 h-12"></div>
-                <h3 className="text-lg font-medium text-slate-700">Parsing hundreds of text lines...</h3>
-                <p className="text-slate-400 text-sm mt-2">This may take a few seconds depending on file size.</p>
+  return (
+    <main className="min-h-screen bg-[#d1d7db] p-3 md:p-5 text-[#111b21]">
+      <div className="mx-auto h-[94vh] max-w-[1450px] overflow-hidden rounded-xl border border-[#c7cdd1] bg-white shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
+        <div className="flex h-full">
+          <aside className="w-full max-w-[370px] border-r border-[#d8dde1] bg-[#f0f2f5] flex flex-col">
+            <div className="bg-[#f0f2f5] px-4 py-3 border-b border-[#d8dde1]">
+              <div className="flex items-center justify-between">
+                <h1 className="text-[22px] font-semibold text-[#00a884]">WhatsApp Analyzer</h1>
+                {loadTime !== null && messages.length > 0 && (
+                  <span className="rounded-full bg-[#d9fdd3] px-3 py-1 text-xs font-medium text-[#087f5b]">
+                    {(loadTime / 1000).toFixed(2)}s
+                  </span>
+                )}
               </div>
-            ) : !messages.length ? (
-              <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-slate-300 rounded-xl bg-slate-50">
-                <input 
-                  type="file" 
-                  accept=".txt" 
-                  onChange={handleFileUpload}
-                  className="hidden" 
-                  id="file-upload" 
-                />
-                <label 
-                  htmlFor="file-upload" 
-                  className="cursor-pointer bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition"
-                >
-                  Choose .txt file
-                </label>
-                <p className="mt-4 text-slate-500 text-sm">Android and iOS formats are supported</p>
+            </div>
+
+            {!messages.length ? (
+              <div className="flex-1 px-4 py-6">
+                <div className="rounded-2xl border border-dashed border-[#bcc5ca] bg-white p-6 text-center">
+                  <p className="text-sm text-[#55626b] mb-4">Upload chat export to start analysis.</p>
+                  <input type="file" accept=".txt" onChange={handleFileUpload} className="hidden" id="file-upload" />
+                  <label
+                    htmlFor="file-upload"
+                    className="inline-flex cursor-pointer items-center rounded-full bg-[#00a884] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[#019272]"
+                  >
+                    Choose .txt file
+                  </label>
+                  <p className="mt-3 text-xs text-[#8696a0]">Android and iOS exports are supported.</p>
+                </div>
               </div>
             ) : (
               <>
-                <div className="flex flex-wrap gap-4 mb-4">
-                  <div className="flex-1 min-w-[240px]">
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Find by date and time</label>
-                    <DatePicker
-                      selected={searchDateTime}
-                      onChange={(date: Date | null) => setSearchDateTime(date)}
-                      showTimeSelect
-                      timeIntervals={1}
-                      dateFormat="yyyy-MM-dd HH:mm:ss"
-                      timeFormat="HH:mm"
-                      placeholderText="Select date and time"
-                      className="w-full bg-slate-100 border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm"
+                <div className="px-4 py-3 space-y-3 border-b border-[#d8dde1]">
+                  <label className="text-xs font-medium tracking-wide text-[#667781]">Find by date and time</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="datetime-local"
+                      lang="en-GB"
+                      step="1"
+                      value={searchDateTime}
+                      onChange={(e) => setSearchDateTime(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleSearchByDateTime();
+                      }}
+                      className="dt-24h flex-1 rounded-lg border border-[#d8dde1] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#25d366]"
                     />
-                  </div>
-                  <div className="flex items-end">
                     <button
                       onClick={handleSearchByDateTime}
-                      className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition text-sm disabled:opacity-50"
-                      disabled={searchDateTime === null || messages.length === 0}
+                      className="rounded-lg bg-[#00a884] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#019272] disabled:cursor-not-allowed disabled:opacity-60"
+                      disabled={!searchDateTime}
                     >
                       Search
                     </button>
                   </div>
                 </div>
 
-                <div className="flex flex-wrap justify-between items-center mb-4 gap-2">
-                  <div className="text-sm text-slate-500 flex flex-wrap gap-2 items-center">
-                    <span>Quick jumps:</span>
-                    <button onClick={() => jumpToMessageIndex(0)} className="bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-1 rounded text-xs transition border border-slate-300">First in chat</button>
-                    <button onClick={() => jumpToMessageIndex(messages.length - 1)} className="bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-1 rounded text-xs transition border border-slate-300">Last in chat</button>
-                    <div className="w-px h-4 relative bg-slate-300 mx-1"></div>
-                    <button onClick={() => startIndex !== null && jumpToMessageIndex(startIndex)} className="bg-green-100 hover:bg-green-200 text-green-700 px-2 py-1 rounded text-xs transition border border-green-300">Selected start</button>
-                    <button onClick={() => endIndex !== null && jumpToMessageIndex(endIndex)} className="bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded text-xs transition border border-red-300">Selected end</button>
+                <div className="px-4 py-3 border-b border-[#d8dde1] space-y-2">
+                  <p className="text-xs font-medium tracking-wide text-[#667781]">Quick jumps</p>
+                  <div className="flex flex-wrap gap-2">
+                    <button onClick={() => jumpToMessageIndex(0)} className="wa-chip">First</button>
+                    <button onClick={() => jumpToMessageIndex(messages.length - 1)} className="wa-chip">Last</button>
+                    <button onClick={() => startIndex !== null && jumpToMessageIndex(startIndex)} className="wa-chip">Start</button>
+                    <button onClick={() => endIndex !== null && jumpToMessageIndex(endIndex)} className="wa-chip">End</button>
                   </div>
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={() => { setStartIndex(0); setEndIndex(messages.length - 1); }}
-                      className="text-xs text-orange-600 hover:bg-orange-50 px-2 py-1 border border-orange-200 rounded transition"
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <button
+                      onClick={() => {
+                        setStartIndex(0);
+                        setEndIndex(messages.length - 1);
+                      }}
+                      className="text-xs text-[#cf8f00] hover:underline"
                     >
-                      Reset selection (All)
+                      Reset selection
                     </button>
-                    <button 
-                      onClick={() => { setMessages([]); setStartIndex(null); setEndIndex(null); setLoadTime(null); setSearchDateTime(null); }}
-                      className="text-xs text-red-500 hover:bg-red-50 px-2 py-1 rounded transition"
+                    <button
+                      onClick={() => {
+                        setMessages([]);
+                        setStartIndex(null);
+                        setEndIndex(null);
+                        setLoadTime(null);
+                        setSearchDateTime("");
+                      }}
+                      className="text-xs text-[#d10000] hover:underline"
                     >
                       Clear file
                     </button>
                   </div>
                 </div>
-                
-                <div className="flex-1 overflow-y-auto bg-slate-50 rounded-xl border border-slate-200 p-4 space-y-3" ref={listRef}>
+
+                <div className="flex-1 overflow-y-auto px-2 py-2">
+                  <div className="rounded-xl bg-white border border-[#d8dde1] p-3">
+                    <div className="mb-3 flex items-center justify-between">
+                      <h2 className="text-sm font-semibold text-[#111b21]">Selection analysis</h2>
+                      <button
+                        onClick={handleCopy}
+                        className="rounded-md bg-[#f0f2f5] px-2 py-1 text-xs text-[#3b4a54] hover:bg-[#e4e8eb]"
+                        title="Copy all results"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                    <p className="text-xs text-[#667781]">Messages in selected range</p>
+                    <p className="mb-3 text-2xl font-semibold text-[#00a884]">{filteredMessages.length}</p>
+                    <div className="space-y-1.5">
+                      {stats.map(([sender, count], idx) => (
+                        <div key={sender} className="flex items-center justify-between rounded-md bg-[#f7f8fa] px-2 py-1.5 text-sm">
+                          <span className="truncate text-[#111b21]">{idx + 1}. {sender}</span>
+                          <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-[#3b4a54] border border-[#e3e6e8]">{count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </aside>
+
+          <section className="flex min-w-0 flex-1 flex-col bg-[#efeae2]">
+            <div className="flex items-center justify-between border-b border-[#d8dde1] bg-[#f0f2f5] px-5 py-3">
+              <div>
+                <h3 className="text-sm font-semibold text-[#111b21]">Chat Messages</h3>
+                <p className="text-xs text-[#667781]">Search jumps to the closest date/time message.</p>
+              </div>
+              <span className="text-xs text-[#667781]">Page {currentPage} of {Math.max(1, totalPages)}</span>
+            </div>
+
+            {isLoading ? (
+              <div className="flex flex-1 items-center justify-center wa-chat-bg">
+                <div className="rounded-xl bg-white/80 px-5 py-4 text-sm text-[#3b4a54] shadow-sm">Parsing chat file...</div>
+              </div>
+            ) : (
+              <div className="wa-chat-bg flex-1 overflow-y-auto px-4 py-4" ref={listRef}>
+                <div className="space-y-3">
                   {paginatedMessages.map((msg, i) => {
                     const actualIndex = (currentPage - 1) * PAGE_SIZE + i;
                     return (
-                    <div id={`msg-${actualIndex}`} key={actualIndex} className={`p-3 rounded-lg shadow-sm border group transition-colors ${getMessageColorClass(actualIndex)}`}>
-                      <div className="flex justify-between items-start text-xs mb-1">
-                        <div className="flex flex-col">
-                           <span className={`font-semibold ${getMessageColorClass(actualIndex).includes('bg-white') ? 'text-slate-600' : 'text-blue-800'}`}>{msg.sender}</span>
-                           <span className="text-slate-500 mt-0.5 opacity-90">{formatTime24h(msg.parsedDate, msg.dateStr)}</span>
+                      <div key={actualIndex} id={`msg-${actualIndex}`} className={`max-w-[76%] rounded-lg border px-3 py-2 shadow-sm group ${getMessageColorClass(actualIndex)} ${getBubbleLayout(actualIndex)}`}>
+                        <div className="mb-1 flex items-start justify-between gap-2 text-[11px]">
+                          <span className="font-semibold text-[#50715d] truncate">{msg.sender}</span>
+                          <span className="text-[#667781] whitespace-nowrap">{formatTime24h(msg.parsedDate, msg.dateStr)}</span>
                         </div>
-                        <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity items-end">
-                            <button 
-                              onClick={() => {
-                                setStartIndex(actualIndex);
-                                if (endIndex !== null && actualIndex > endIndex) setEndIndex(messages.length - 1);
-                              }}
-                              className="text-[10px] bg-green-100 border border-green-300 text-green-700 px-2 py-0.5 rounded hover:bg-green-200 transition"
-                            >
-                              Set as Start
-                            </button>
-                            <button 
-                              onClick={() => {
-                                setEndIndex(actualIndex);
-                                if (startIndex !== null && actualIndex < startIndex) setStartIndex(0);
-                              }}
-                              className="text-[10px] bg-red-100 border border-red-300 text-red-700 px-2 py-0.5 rounded hover:bg-red-200 transition"
-                            >
-                              Set as End
-                            </button>
+                        <p className="whitespace-pre-wrap text-sm text-[#111b21]">{msg.text}</p>
+                        <div className="mt-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                          <button
+                            onClick={() => {
+                              setStartIndex(actualIndex);
+                              if (endIndex !== null && actualIndex > endIndex) setEndIndex(messages.length - 1);
+                            }}
+                            className="rounded bg-[#d9fdd3] px-2 py-0.5 text-[10px] text-[#087f5b]"
+                          >
+                            Set as Start
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEndIndex(actualIndex);
+                              if (startIndex !== null && actualIndex < startIndex) setStartIndex(0);
+                            }}
+                            className="rounded bg-[#ffe1e1] px-2 py-0.5 text-[10px] text-[#9c2222]"
+                          >
+                            Set as End
+                          </button>
                         </div>
                       </div>
-                      <p className={`text-sm whitespace-pre-wrap ${getMessageColorClass(actualIndex).includes('bg-white') ? 'text-slate-500' : 'text-slate-800'}`}>{msg.text}</p>
-                    </div>
-                  )})}
-                  {messages.length === 0 && (
-                    <div className="text-center text-slate-400 text-sm italic pt-4">
-                       No messages loaded.
-                    </div>
-                  )}
+                    );
+                  })}
                 </div>
-
-                {/* Pagination Controls */}
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-between mt-4">
-                    <button 
-                      disabled={currentPage === 1}
-                      onClick={() => {
-                        setCurrentPage(p => Math.max(1, p - 1));
-                        listRef.current?.scrollTo({ top: 0, behavior: "smooth" });
-                      }}
-                      className="px-3 py-1 bg-slate-200 text-slate-700 rounded disabled:opacity-50 text-sm"
-                    >
-                      &larr; Previous ({PAGE_SIZE})
-                    </button>
-                    <span className="text-sm text-slate-500">
-                      Page {currentPage} of {totalPages}
-                    </span>
-                    <button 
-                      disabled={currentPage === totalPages}
-                      onClick={() => {
-                        setCurrentPage(p => Math.min(totalPages, p + 1));
-                        listRef.current?.scrollTo({ top: 0, behavior: "smooth" });
-                      }}
-                      className="px-3 py-1 bg-slate-200 text-slate-700 rounded disabled:opacity-50 text-sm"
-                    >
-                      Next ({PAGE_SIZE}) &rarr;
-                    </button>
-                  </div>
-                )}
-              </>
+              </div>
             )}
-          </div>
 
-          {/* Sidebar Stats */}
-          {messages.length > 0 && !isLoading && (
-            <div className="w-[300px] bg-slate-50 flex flex-col border-l border-slate-200">
-              <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-white">
-                <h2 className="font-bold text-slate-800">Selection analysis</h2>
-                <button 
-                  onClick={handleCopy}
-                  className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition"
-                  title="Copy all results"
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between border-t border-[#d8dde1] bg-[#f0f2f5] px-5 py-2.5">
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => {
+                    setCurrentPage((p) => Math.max(1, p - 1));
+                    listRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className="wa-nav-btn"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                  Previous
+                </button>
+                <span className="text-xs text-[#667781]">{PAGE_SIZE} messages per page</span>
+                <button
+                  disabled={currentPage === totalPages}
+                  onClick={() => {
+                    setCurrentPage((p) => Math.min(totalPages, p + 1));
+                    listRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className="wa-nav-btn"
+                >
+                  Next
                 </button>
               </div>
-              <div className="p-6 flex-1 overflow-y-auto">
-                <div className="mb-6 pb-6 border-b border-slate-200">
-                  <div className="text-sm text-slate-500 mb-1">Messages in selected range</div>
-                  <div className="text-3xl font-light text-slate-800 text-blue-600">{filteredMessages.length}</div>
-                </div>
-                
-                {filteredMessages.length > 0 ? (
-                  <div className="space-y-3">
-                    {stats.map(([sender, count], idx) => (
-                      <div key={sender} className="flex items-center justify-between p-2 rounded hover:bg-slate-100 transition">
-                        <div className="flex items-center gap-3 overflow-hidden">
-                          <div className="w-5 text-slate-400 text-xs font-bold">{idx + 1}.</div>
-                          <div className="text-sm font-medium text-slate-700 truncate">{sender}</div>
-                        </div>
-                        <div className="text-slate-900 font-bold bg-white px-2 py-0.5 rounded shadow-sm text-sm border border-slate-100">{count}</div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-slate-500 text-center italic">Empty range. Change selection to see stats.</p>
-                )}
-              </div>
-            </div>
-          )}
+            )}
+          </section>
         </div>
       </div>
     </main>

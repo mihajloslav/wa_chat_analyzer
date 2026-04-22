@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import "react-datepicker/dist/react-datepicker.css";
 
 :root {
   --background: #ffffff;
@@ -24,4 +23,50 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+.wa-chat-bg {
+  background-color: #efeae2;
+  background-image:
+    radial-gradient(rgba(17, 27, 33, 0.035) 1px, transparent 1px),
+    radial-gradient(rgba(17, 27, 33, 0.025) 1px, transparent 1px);
+  background-position: 0 0, 12px 12px;
+  background-size: 24px 24px;
+}
+
+.wa-chip {
+  border: 1px solid #d1d7db;
+  background: #ffffff;
+  border-radius: 999px;
+  color: #3b4a54;
+  font-size: 12px;
+  line-height: 1;
+  padding: 7px 10px;
+}
+
+.wa-chip:hover {
+  background: #f5f6f6;
+}
+
+.wa-nav-btn {
+  border: 1px solid #d1d7db;
+  background: #ffffff;
+  color: #3b4a54;
+  border-radius: 999px;
+  font-size: 12px;
+  padding: 6px 12px;
+}
+
+.wa-nav-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Force native datetime picker toward 24h presentation where browser allows it. */
+input[type="datetime-local"].dt-24h {
+  -webkit-locale: "en-GB";
+}
+
+input[type="datetime-local"].dt-24h::-webkit-datetime-edit-ampm-field {
+  display: none;
 }
