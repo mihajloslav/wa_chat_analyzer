@@ -344,7 +344,7 @@ export default function Home() {
                     className="inline-flex cursor-pointer items-center rounded-full bg-[#25D366] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[#189754]"
                   >
                     Choose .txt file
-                  </label>1DAA61
+                  </label>
                   <p className="mt-3 text-xs text-[#8696a0]">Android and iOS exports are supported.</p>
                 </div>
               </div>
