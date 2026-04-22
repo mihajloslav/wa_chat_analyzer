@@ -524,8 +524,8 @@ export default function Home() {
                   <div className="flex flex-wrap gap-2">
                     <button onClick={() => jumpToMessageIndex(0)} className="wa-chip">First</button>
                     <button onClick={() => jumpToMessageIndex(messages.length - 1)} className="wa-chip">Last</button>
-                    <button onClick={() => startIndex !== null && jumpToMessageIndex(startIndex)} className="wa-chip">Start</button>
-                    <button onClick={() => endIndex !== null && jumpToMessageIndex(endIndex)} className="wa-chip">End</button>
+                    <button onClick={() => startIndex !== null && jumpToMessageIndex(startIndex)} className="wa-chip border-[#7bcf9a] text-[#1f6a45]">Start</button>
+                    <button onClick={() => endIndex !== null && jumpToMessageIndex(endIndex)} className="wa-chip border-[#e8a9a9] text-[#8a2c2c]">End</button>
                   </div>
                   <div className="flex flex-wrap gap-2 pt-1">
                     <button
@@ -533,7 +533,7 @@ export default function Home() {
                         setStartIndex(0);
                         setEndIndex(messages.length - 1);
                       }}
-                      className="text-xs text-[#cf8f00] hover:underline"
+                      className="wa-chip text-xs text-[#cf8f00]"
                     >
                       Reset selection
                     </button>
@@ -545,7 +545,7 @@ export default function Home() {
                         setLoadTime(null);
                         applyDateToPicker(new Date());
                       }}
-                      className="text-xs text-[#d10000] hover:underline"
+                      className="wa-chip text-xs text-[#d10000]"
                     >
                       Clear file
                     </button>
