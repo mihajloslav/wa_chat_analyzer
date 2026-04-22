@@ -18,6 +18,19 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+button {
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease, filter 0.15s ease;
+}
+
+button:hover:not(:disabled) {
+  filter: brightness(0.97);
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
 .wa-chat-bg {
   background-color: #efeae2;
   background-image:
@@ -35,6 +48,7 @@ body {
   font-size: 12px;
   line-height: 1;
   padding: 7px 10px;
+  cursor: pointer;
 }
 
 .wa-chip:hover {
