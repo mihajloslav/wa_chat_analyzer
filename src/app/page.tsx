@@ -524,16 +524,16 @@ export default function Home() {
                   <div className="flex flex-wrap gap-2">
                     <button onClick={() => jumpToMessageIndex(0)} className="wa-chip">First</button>
                     <button onClick={() => jumpToMessageIndex(messages.length - 1)} className="wa-chip">Last</button>
-                    <button onClick={() => startIndex !== null && jumpToMessageIndex(startIndex)} className="wa-chip border-[#7bcf9a] text-[#1f6a45]">Start</button>
-                    <button onClick={() => endIndex !== null && jumpToMessageIndex(endIndex)} className="wa-chip border-[#e8a9a9] text-[#8a2c2c]">End</button>
+                    <button onClick={() => startIndex !== null && jumpToMessageIndex(startIndex)} className="wa-chip border-[#66c08a] bg-[#eefaf3] text-[#1f6a45]">Start</button>
+                    <button onClick={() => endIndex !== null && jumpToMessageIndex(endIndex)} className="wa-chip border-[#e09595] bg-[#fff2f2] text-[#8a2c2c]">End</button>
                   </div>
-                  <div className="flex flex-wrap gap-2 pt-1">
+                  <div className="mt-2 border-t border-[#d8dde1] pt-2 flex flex-wrap gap-2">
                     <button
                       onClick={() => {
                         setStartIndex(0);
                         setEndIndex(messages.length - 1);
                       }}
-                      className="wa-chip text-xs text-[#cf8f00]"
+                      className="wa-chip border-[#f1cf7a] bg-[#fff9e8] text-xs text-[#cf8f00]"
                     >
                       Reset selection
                     </button>
@@ -545,7 +545,7 @@ export default function Home() {
                         setLoadTime(null);
                         applyDateToPicker(new Date());
                       }}
-                      className="wa-chip text-xs text-[#d10000]"
+                      className="wa-chip border-[#f2b2b2] bg-[#fff1f1] text-xs text-[#d10000]"
                     >
                       Clear file
                     </button>
