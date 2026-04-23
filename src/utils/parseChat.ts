@@ -10,12 +10,13 @@ export function parseChat(text: string): ChatMessage[] {
   const lines = cleanedText.split(/\r?\n/);
   const messages: ChatMessage[] = [];
   
-  const waRegex = /^\[?(\d{1,2}[./]\s*\d{1,2}[./]\s*\d{2,4}\.?)[,\s]+(\d{1,2}:\d{2}(?::\d{2})?)\]?\s*(?:-\s*)?([^:]+?):\s*(.*)$/;
+  // Match date/time and everything after the dash (system message or sender: text)
+  const dateTimeRegex = /^\[?(\d{1,2}[./]\s*\d{1,2}[./]\s*\d{2,4}\.?)[,\s]+(\d{1,2}:\d{2}(?::\d{2})?)\]?\s*-\s*(.+)$/;
 
   let currentMessage: ChatMessage | null = null;
 
   for (const line of lines) {
-    const match = line.match(waRegex);
+    const match = line.match(dateTimeRegex);
     
     if (match) {
       if (currentMessage) {
@@ -24,8 +25,22 @@ export function parseChat(text: string): ChatMessage[] {
       
       const dateStr = match[1].trim();
       const timeStr = match[2].trim();
-      const sender = match[3].replace(/^~?\s*/, '').trim(); 
-      const content = match[4];
+      const afterDash = match[3];
+
+      // Check if this is a regular message (sender: text) or system message (no colon)
+      const colonIndex = afterDash.indexOf(':');
+      let sender = '';
+      let content = afterDash;
+
+      if (colonIndex !== -1) {
+        // Regular message with sender: text
+        sender = afterDash.substring(0, colonIndex).replace(/^~?\s*/, '').trim();
+        content = afterDash.substring(colonIndex + 1).trim();
+      } else {
+        // System message without sender
+        sender = 'System';
+        content = afterDash;
+      }
 
       const fullDateStr = `${dateStr} ${timeStr}`;
       let parsedDate = parseDateStr(dateStr, timeStr);
