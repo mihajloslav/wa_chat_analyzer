@@ -165,12 +165,28 @@ export default function Home() {
   const startValue = startIndex !== null && messages[startIndex] ? toDatetimeLocal(messages[startIndex].parsedDate) : "";
   const endValue = endIndex !== null && messages[endIndex] ? toDatetimeLocal(messages[endIndex].parsedDate) : "";
 
-  const totalPages = Math.ceil(messages.length / PAGE_SIZE);
-  const paginatedMessages = messages.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const orderedEntries = useMemo(() => {
+    const allEntries = messages.map((msg, actualIndex) => ({ msg, actualIndex }));
+    const system = allEntries.filter(({ msg }) => msg.sender === "System");
+    const regular = allEntries.filter(({ msg }) => msg.sender !== "System");
+    return [...system, ...regular];
+  }, [messages]);
+
+  const totalPages = Math.ceil(orderedEntries.length / PAGE_SIZE);
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const paginatedEntries = orderedEntries.slice(pageStart, currentPage * PAGE_SIZE);
+  const firstUserPosition = orderedEntries.findIndex(({ msg }) => msg.sender !== "System");
+
+  const selectedSystemCount = useMemo(
+    () => filteredMessages.filter((m) => m.sender === "System").length,
+    [filteredMessages]
+  );
+  const selectedUserCount = filteredMessages.length - selectedSystemCount;
 
   const stats = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const m of filteredMessages) {
+      if (m.sender === "System") continue;
       counts[m.sender] = (counts[m.sender] || 0) + 1;
     }
     return Object.entries(counts).sort((a, b) => b[1] - a[1]);
@@ -179,6 +195,8 @@ export default function Home() {
   const handleCopy = () => {
     let result = `=== WHATSAPP CHAT ANALYSIS ===\n`;
     result += `Total messages in range: ${filteredMessages.length}\n`;
+    result += `User messages in range: ${selectedUserCount}\n`;
+    result += `System messages in range: ${selectedSystemCount}\n`;
     result += `Range: ${startValue.replace('T', ' ')} to ${endValue.replace('T', ' ')}\n`;
     result += `------------------\n`;
     stats.forEach(([sender, count], idx) => {
@@ -191,7 +209,10 @@ export default function Home() {
 
   const jumpToMessageIndex = (index: number) => {
     if (index < 0 || index >= messages.length) return;
-    const targetPage = Math.floor(index / PAGE_SIZE) + 1;
+    const orderedPosition = orderedEntries.findIndex((entry) => entry.actualIndex === index);
+    if (orderedPosition === -1) return;
+
+    const targetPage = Math.floor(orderedPosition / PAGE_SIZE) + 1;
     setCurrentPage(targetPage);
     setTimeout(() => {
       const msgEl = document.getElementById(`msg-${index}`);
@@ -576,6 +597,10 @@ export default function Home() {
                     </div>
                     <p className="text-xs text-[#667781]">Messages in selected range</p>
                     <p className="mb-3 text-2xl font-semibold text-[#25D366]">{filteredMessages.length}</p>
+                    <div className="mb-3 space-y-1 text-xs text-[#667781]">
+                      <p>User messages: <span className="font-semibold text-[#111b21]">{selectedUserCount}</span></p>
+                      <p>System messages: <span className="font-semibold text-[#111b21]">{selectedSystemCount}</span></p>
+                    </div>
                     <div className="space-y-1.5">
                       {stats.map(([sender, count], idx) => (
                         <div key={sender} className="flex items-center justify-between rounded-md bg-[#f7f8fa] px-2 py-1.5 text-sm">
@@ -606,10 +631,21 @@ export default function Home() {
             ) : (
                 <div className="wa-chat-bg flex-1 overflow-y-auto px-4 py-4" ref={listRef}>
                 <div>
-                  {paginatedMessages.map((msg, i) => {
-                    const actualIndex = (currentPage - 1) * PAGE_SIZE + i;
+                  {paginatedEntries.map(({ msg, actualIndex }, i) => {
+                    const absoluteRenderedPosition = pageStart + i;
+                    const isFirstRegularAfterSystem =
+                      firstUserPosition !== -1 && absoluteRenderedPosition === firstUserPosition;
                     return (
-                      <div key={actualIndex} id={`msg-${actualIndex}`} className={`w-[98%] border px-3 py-2 shadow-sm group ${getMessageColorClass(actualIndex)} ${getBubbleLayout()} ${getBubbleChainClass(actualIndex)}`}>
+                      <div
+                        key={actualIndex}
+                        id={`msg-${actualIndex}`}
+                        className={`w-[98%] border px-3 py-2 shadow-sm group ${getMessageColorClass(actualIndex)} ${getBubbleLayout()} ${getBubbleChainClass(actualIndex)} ${isFirstRegularAfterSystem ? "mt-6" : ""}`}
+                      >
+                        {isFirstRegularAfterSystem && (
+                          <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-[#667781]">
+                            User messages
+                          </div>
+                        )}
                         <div className="mb-1 flex items-start justify-between gap-2 text-[11px]">
                           <span className="font-semibold text-[#50715d] truncate">{msg.sender}</span>
                           <span className="text-[#667781] whitespace-nowrap">{formatTime24h(msg.parsedDate, msg.dateStr)}</span>

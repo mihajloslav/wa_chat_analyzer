@@ -15,13 +15,20 @@ export function parseChat(text: string): ChatMessage[] {
 
   let currentMessage: ChatMessage | null = null;
 
+  const pushIfValid = (message: ChatMessage | null) => {
+    if (!message) return;
+
+    // Keep system rows, but drop sender rows that have no actual text content.
+    if (message.sender !== 'System' && message.text.trim() === '') return;
+
+    messages.push(message);
+  };
+
   for (const line of lines) {
     const match = line.match(dateTimeRegex);
     
     if (match) {
-      if (currentMessage) {
-        messages.push(currentMessage);
-      }
+      pushIfValid(currentMessage);
       
       const dateStr = match[1].trim();
       const timeStr = match[2].trim();
@@ -43,7 +50,7 @@ export function parseChat(text: string): ChatMessage[] {
       }
 
       const fullDateStr = `${dateStr} ${timeStr}`;
-      let parsedDate = parseDateStr(dateStr, timeStr);
+      const parsedDate = parseDateStr(dateStr, timeStr);
       
       currentMessage = {
         dateStr: fullDateStr,
@@ -56,9 +63,7 @@ export function parseChat(text: string): ChatMessage[] {
     }
   }
 
-  if (currentMessage) {
-    messages.push(currentMessage);
-  }
+  pushIfValid(currentMessage);
 
   return messages;
 }
@@ -128,7 +133,7 @@ function parseDateStr(dateStr: string, timeStr: string): Date | null {
     }
 
     return parsed;
-  } catch (e) {
+  } catch {
     return null;
   }
 }
