@@ -18,9 +18,6 @@ export function parseChat(text: string): ChatMessage[] {
   const pushIfValid = (message: ChatMessage | null) => {
     if (!message) return;
 
-    // Keep system rows, but drop sender rows that have no actual text content.
-    if (message.sender !== 'System' && message.text.trim() === '') return;
-
     messages.push(message);
   };
 
